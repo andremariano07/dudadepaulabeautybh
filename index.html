@@ -132,9 +132,9 @@ footer a{font-weight:600;color:var(--orchid)}
         <dt>Horário</dt><dd id="s-time" class="none">Escolha um horário</dd>
       </dl>
       <div class="total"><span>Valor a partir de</span><strong id="s-price">R$ 0</strong></div>
-      <button class="send" id="send" type="button" disabled>Enviar pedido pelo WhatsApp</button>
+      <button class="send" id="send" type="button" disabled>Enviar pedido</button>
       <div class="msg" id="msg" role="status"></div>
-      <p class="hint">O horário só fica reservado depois que a Duda confirmar pelo WhatsApp.</p>
+      <p class="hint">A Duda confirma seu pedido e avisa você pelo WhatsApp.</p>
     </aside>
   </div>
 </main>
@@ -155,6 +155,7 @@ const CONFIG = {
   abre: "09:00", fecha: "19:00",        // horário de funcionamento
   intervalo: 30,                        // minutos entre opções de horário
   diasNaAgenda: 28,
+  scriptUrl: "",                        // cole aqui o link do Google Apps Script (veja o passo a passo)
   bloqueados: {                         // horários já ocupados: "AAAA-MM-DD": ["09:00","14:30"]
     // "2026-12-20": ["09:00","09:30"]
   },
@@ -177,6 +178,12 @@ const CONFIG = {
 const $ = id => document.getElementById(id);
 const brl = n => "R$ " + n.toLocaleString("pt-BR");
 const state = { svcs: [], date: null, time: null };
+let busy = [], busyOk = !CONFIG.scriptUrl;
+async function loadBusy() {
+  if (!CONFIG.scriptUrl) return;
+  try { busy = (await (await fetch(CONFIG.scriptUrl + "?t=" + Date.now())).json()).busy || []; } catch (e) { busy = []; }
+  busyOk = true; renderTimes();
+}
 const totalMin = () => state.svcs.reduce((a, x) => a + x.min, 0);
 const totalPreco = () => state.svcs.reduce((a, x) => a + x.preco, 0);
 const iso = d => d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
@@ -222,6 +229,7 @@ for (let i = 0; i < CONFIG.diasNaAgenda; i++) {
 /* horários */
 function renderTimes() {
   const box = $("times"); box.innerHTML = "";
+  if (!busyOk) { box.className = ""; box.innerHTML = `<div class="empty">Carregando horários livres...</div>`; return; }
   if (!state.svcs.length || !state.date) { box.className = ""; box.innerHTML = `<div class="empty">Escolha os serviços e o dia para ver os horários livres.</div>`; return; }
   const total = totalMin();
   box.className = "times";
@@ -232,9 +240,11 @@ function renderTimes() {
     const h = toStr(m);
     const passou = ehHoje && m <= agora.getHours()*60 + agora.getMinutes() + 60;
     const choque = ocupados.some(o => { const a = toMin(o); return a < m + total && a + CONFIG.intervalo > m; });
+    const t0 = Date.parse(key + "T" + h + ":00-03:00"), t1 = t0 + total * 60000;
+    const lotado = busy.some(x => x.s < t1 && x.e > t0);
     const b = document.createElement("button");
     b.type = "button"; b.className = "time"; b.textContent = h;
-    b.disabled = passou || choque; b.setAttribute("aria-pressed", state.time === h);
+    b.disabled = passou || choque || lotado; b.setAttribute("aria-pressed", state.time === h);
     b.onclick = () => { state.time = h; box.querySelectorAll(".time").forEach(x => x.setAttribute("aria-pressed", x===b)); renderSummary(); };
     box.appendChild(b); if (!b.disabled) n++;
   }
@@ -276,11 +286,31 @@ $("send").onclick = () => {
     "WhatsApp: " + $("phone").value,
     obs ? "Observações: " + obs : ""
   ].filter((l,i,a) => l || (i && a[i-1])).join("\n");
-  window.open("https://wa.me/" + CONFIG.whatsapp + "?text=" + encodeURIComponent(texto), "_blank", "noopener");
-  msg.textContent = "Pedido aberto no WhatsApp. É só enviar a mensagem.";
+  const abrirWhats = () => { window.open("https://wa.me/" + CONFIG.whatsapp + "?text=" + encodeURIComponent(texto), "_blank", "noopener"); msg.textContent = "Pedido aberto no WhatsApp. É só enviar a mensagem."; };
+  if (!CONFIG.scriptUrl) return abrirWhats();
+  const btn = $("send"), dados = {
+    nome, tel: $("phone").value, obs, servicos: state.svcs.map(x => x.nome).join(" + "),
+    inicio: iso(state.date) + "T" + state.time, min: totalMin(), preco: totalPreco()
+  };
+  btn.disabled = true; btn.textContent = "Enviando...";
+  fetch(CONFIG.scriptUrl, { method: "POST", body: JSON.stringify(dados) })
+    .then(r => r.json())
+    .then(r => {
+      if (r.ok) {
+        const t0 = Date.parse(dados.inicio + ":00-03:00");
+        busy.push({ s: t0, e: t0 + dados.min * 60000 });
+        state.time = null; renderTimes(); renderSummary();
+        msg.textContent = "Pedido enviado! A Duda vai confirmar e avisar você pelo WhatsApp.";
+      } else if (r.erro === "ocupado") {
+        msg.textContent = "Esse horário acabou de ser reservado. Escolha outro.";
+        state.time = null; busyOk = false; renderTimes(); loadBusy();
+      } else throw new Error(r.erro);
+    })
+    .catch(() => { msg.textContent = "Não conseguimos enviar. Abrindo o WhatsApp para você."; abrirWhats(); })
+    .finally(() => { btn.textContent = "Enviar pedido"; renderSummary(); });
 };
 
-renderTimes(); renderSummary();
+renderTimes(); renderSummary(); loadBusy();
 </script>
 </body>
 </html>
