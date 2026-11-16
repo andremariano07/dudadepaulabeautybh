@@ -76,6 +76,32 @@ button.send:disabled{background:#5A3947;color:#BFA0A8;cursor:not-allowed}
 .msg{margin-top:.8rem;font-size:.92rem;color:#F8C9D2;min-height:1.2em}
 footer{border-top:1px solid var(--line);padding:2rem 0 3rem;text-align:center;color:#6B4A57}
 footer a{font-weight:600;color:var(--orchid)}
+
+.gallery{padding:clamp(2.5rem,6vw,4rem) 0 0}
+.gallery h2{margin-bottom:1rem}
+.gal{display:grid;grid-template-columns:repeat(2,1fr);gap:.7rem}
+@media (min-width:720px){.gal{grid-template-columns:repeat(4,1fr)}}
+.gal img{width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:16px;display:block;background:var(--blush)}
+.lash-card{display:grid;grid-template-columns:84px 1fr;gap:.2rem 1rem;align-items:center;background:#fff;border:1.5px solid var(--line);border-radius:16px;padding:.9rem 1rem}
+.lash-card img,.lash-card .ph{width:84px;height:84px;border-radius:50%;object-fit:cover;grid-row:span 2}
+.lash-card .ph{background:var(--blush);display:grid;place-items:center;font:italic 1.8rem var(--serif);color:var(--orchid)}
+.lash-card h3{font:500 1.2rem/1.2 var(--serif);align-self:end}
+.lash-card p{font-size:.9rem;line-height:1.4;color:#6B4A57;align-self:start}
+.tipos{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:.55rem;margin-top:.6rem}
+.tipo{font:inherit;color:inherit;background:var(--paper);border:1.5px solid var(--line);border-radius:12px;padding:.6rem .4rem;cursor:pointer;text-align:center}
+.tipo small{display:block;color:#6B4A57}
+.tipo b{font:500 1.15rem var(--serif)}
+.tipo:hover{border-color:var(--rose)}
+.tipo[aria-pressed=true]{background:var(--wine);color:var(--blush);border-color:var(--wine)}
+.tipo[aria-pressed=true] small{color:#E9B5BF}
+.info{background:var(--blush);border-radius:18px;padding:1.3rem 1.4rem}
+.info h2{font-size:1.35rem}
+.info ul{margin:.6rem 0 1rem 1.1rem}
+.info li{margin-bottom:.4rem}
+.pix{display:flex;flex-wrap:wrap;gap:.6rem 1rem;align-items:center;justify-content:space-between;background:#fff;border-radius:12px;padding:.8rem 1rem}
+.pix button{font:600 .95rem var(--sans);background:var(--wine);color:var(--blush);border:0;border-radius:99px;padding:.5rem 1.1rem;cursor:pointer}
+.total.sub{border-top:0;padding-top:0;margin-top:-.4rem}
+.total.sub strong{font-size:1.25rem}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.lash path{stroke-dashoffset:0}html{scroll-behavior:auto}}
 </style>
 </head>
@@ -98,12 +124,22 @@ footer a{font-weight:600;color:var(--orchid)}
   </div>
 </header>
 
+<section class="gallery"><div class="wrap">
+  <h2>Trabalhos da Duda</h2>
+  <div class="gal">
+    <img src="trabalho-1.jpg" alt="Maquiagem com olhos dourados, cílios volumosos e gloss" loading="lazy">
+    <img src="trabalho-2.jpg" alt="Maquiagem esfumada em tons de rosé com cílios" loading="lazy">
+    <img src="trabalho-3.jpg" alt="Duda finalizando o blush de uma cliente" loading="lazy">
+    <img src="trabalho-4.jpg" alt="Aplicação de gloss em foto preto e branco" loading="lazy">
+  </div>
+</div></section>
+
 <main id="agendar">
   <div class="wrap grid">
     <form id="form" novalidate>
       <section class="step">
         <h2><span>1</span>Escolha o serviço</h2>
-        <p>Você pode escolher mais de um serviço, por exemplo maquiagem e cílios no mesmo horário. Os valores podem variar conforme o estilo escolhido.</p>
+        <p>Você pode combinar maquiagem e cílios no mesmo horário. Em cílios, escolha um modelo e se é aplicação ou manutenção.</p>
         <div id="services"></div>
       </section>
 
@@ -122,6 +158,18 @@ footer a{font-weight:600;color:var(--orchid)}
         <label>Seu WhatsApp<input id="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="(31) 99999-9999" required></label>
         <label>Observações (opcional)<textarea id="notes" rows="3" placeholder="Ex.: evento, tipo de pele, alergias, referência de make"></textarea></label>
       </section>
+
+      <section class="step info">
+        <h2>Como funciona a reserva</h2>
+        <ul>
+          <li>Para reservar a data é cobrado <b>50% de sinal</b> na hora da marcação. O restante é pago em dinheiro ou cartão no dia do atendimento.</li>
+          <li>A reserva só é feita mediante o <b>comprovante do sinal</b>, enviado pelo WhatsApp.</li>
+          <li>Faltar ou desistir faz você perder o valor do sinal.</li>
+          <li>Tolerância máxima de <b>10 minutos</b>. Atrasos maiores perdem o atendimento, sem devolução do sinal.</li>
+          <li>Endereço: <span id="end"></span></li>
+        </ul>
+        <div class="pix"><span>Pix (celular): <b id="pixkey"></b><br><small id="pixnome"></small></span><button type="button" id="copypix">Copiar chave Pix</button></div>
+      </section>
     </form>
 
     <aside aria-live="polite">
@@ -132,9 +180,10 @@ footer a{font-weight:600;color:var(--orchid)}
         <dt>Horário</dt><dd id="s-time" class="none">Escolha um horário</dd>
       </dl>
       <div class="total"><span>Valor a partir de</span><strong id="s-price">R$ 0</strong></div>
+      <div class="total sub"><span>Sinal para reservar (50%)</span><strong id="s-sinal">R$ 0</strong></div>
       <button class="send" id="send" type="button" disabled>Enviar pedido</button>
       <div class="msg" id="msg" role="status"></div>
-      <p class="hint">A Duda confirma seu pedido e avisa você pelo WhatsApp.</p>
+      <p class="hint">A Duda confirma seu horário depois de receber o comprovante do sinal.</p>
     </aside>
   </div>
 </main>
@@ -149,8 +198,10 @@ footer a{font-weight:600;color:var(--orchid)}
 <script>
 /* ===== CONFIGURAÇÃO: edite só esta parte ===== */
 const CONFIG = {
-  whatsapp: "5531990148412",            // DDI + DDD + número, só dígitos
+  whatsapp: "5531984948412",            // DDI + DDD + número, só dígitos
   instagram: "dudadepaulabeautybh",
+  endereco: "Rua Capivari, 426, apto 202, bairro Serra, Belo Horizonte",
+  pix: "31984948412", pixNome: "Eduarda Paula Fonseca · Banco Inter",
   diasAbertos: [1,2,3,4,5,6],           // 0=dom, 1=seg ... 6=sáb
   abre: "09:00", fecha: "19:00",        // horário de funcionamento
   intervalo: 30,                        // minutos entre opções de horário
@@ -161,22 +212,24 @@ const CONFIG = {
   },
   servicos: [
     { grupo: "Maquiagem", itens: [
-      { nome: "Maquiagem social", min: 90,  preco: 180, desc: "Para o dia a dia, jantares e eventos" },
-      { nome: "Madrinha / formatura", min: 120, preco: 250, desc: "Produção completa com durabilidade" },
-      { nome: "Maquiagem de noiva", min: 180, preco: 450, desc: "Inclui teste de pele e acabamento" }
+      { nome: "Maquiagem social · no espaço da Duda", ex: "make", min: 90, preco: 230, desc: "R$ 230 à vista · R$ 250 no cartão (até 2x). Cílios já inclusos" },
+      { nome: "Maquiagem social · à domicílio", ex: "make", min: 90, preco: 280, desc: "R$ 280 à vista · R$ 300 no cartão (até 2x). Cílios inclusos. Taxa de deslocamento a combinar" },
+      { nome: "Cachos", min: 45, preco: 65, desc: "O cabelo deve estar lavado e escovado" }
     ]},
-    { grupo: "Cílios", itens: [
-      { nome: "Fio a fio", min: 120, preco: 150, desc: "Efeito natural e delicado" },
-      { nome: "Volume russo", min: 150, preco: 190, desc: "Olhar marcante e preenchido" },
-      { nome: "Lash lifting", min: 60,  preco: 120, desc: "Curvatura e definição dos seus cílios" },
-      { nome: "Manutenção", min: 90,  preco: 100, desc: "Até 21 dias após a aplicação" }
+    { grupo: "Extensão de cílios (fio a fio)", itens: [
+      { nome: "Volume Brasileiro", img: "cilios-brasileiro.jpg", desc: "2 fios finos por cílio: efeito alinhado, natural e de acabamento suave.", aplic: { min: 120, preco: 150 }, manut: { min: 90, preco: 120 } },
+      { nome: "Volume Egípcio", img: "cilios-egipcio.jpg", desc: "Fios finos e delicados, mais preenchido no canto externo, com formato alongado.", aplic: { min: 120, preco: 170 }, manut: { min: 90, preco: 130 } },
+      { nome: "Volume Moderado", img: "cilios-moderado.jpg", desc: "Combina volumes 3D a 5D: olhar glamouroso sem o impacto do volume russo.", aplic: { min: 150, preco: 180 }, manut: { min: 90, preco: 135 } },
+      { nome: "Volume Russo", img: "cilios-russo.jpg", desc: "Olhar dramático, efeito de cílios de boneca, com fans de 3 a 7 fios por cílio.", aplic: { min: 150, preco: 190 }, manut: { min: 90, preco: 140 } },
+      { nome: "Fox Eyes", img: "cilios-fox.jpg", desc: "Olhar felino, com volume nas pontas e mais curto no canto interno.", aplic: { min: 150, preco: 200 }, manut: { min: 90, preco: 145 } },
+      { nome: "Fios marrons", desc: "Fios na cor marrom para um olhar mais suave.", aplic: { min: 120, preco: 200 }, manut: { min: 90, preco: 150 } }
     ]}
   ]
 };
 /* ============================================== */
 
 const $ = id => document.getElementById(id);
-const brl = n => "R$ " + n.toLocaleString("pt-BR");
+const brl = n => "R$ " + n.toLocaleString("pt-BR", { minimumFractionDigits: n % 1 ? 2 : 0 });
 const state = { svcs: [], date: null, time: null };
 let busy = [], busyOk = !CONFIG.scriptUrl;
 async function loadBusy() {
@@ -194,23 +247,42 @@ const dur = m => (m>=60 ? Math.floor(m/60) + "h" : "") + (m%60 ? (m>=60 ? String
 $("ig").href = "https://instagram.com/" + CONFIG.instagram;
 
 /* serviços */
-const sv = $("services");
+const sv = $("services"), btns = new Map();
+function toggle(s) {
+  const i = state.svcs.indexOf(s);
+  if (i >= 0) state.svcs.splice(i, 1);
+  else { if (s.ex) state.svcs = state.svcs.filter(x => x.ex !== s.ex); state.svcs.push(s); }
+  btns.forEach((b, k) => b.setAttribute("aria-pressed", state.svcs.includes(k)));
+  state.time = null; renderTimes(); renderSummary();
+}
 CONFIG.servicos.forEach(g => {
   const t = document.createElement("div"); t.className = "group-title"; t.textContent = g.grupo; sv.appendChild(t);
   const box = document.createElement("div"); box.className = "opts"; sv.appendChild(box);
-  g.itens.forEach(s => {
-    const b = document.createElement("button");
-    b.type = "button"; b.className = "opt"; b.setAttribute("aria-pressed","false");
-    b.innerHTML = `<span><b>${s.nome}</b><small>${s.desc} · ${dur(s.min)}</small></span><span class="price">${brl(s.preco)}</span>`;
-    b.onclick = () => {
-      const i = state.svcs.indexOf(s);
-      if (i >= 0) state.svcs.splice(i, 1); else state.svcs.push(s);
-      b.setAttribute("aria-pressed", i < 0);
-      state.time = null; renderTimes(); renderSummary();
-    };
-    box.appendChild(b);
+  g.itens.forEach(it => {
+    if (it.aplic) {
+      const card = document.createElement("div"); card.className = "lash-card";
+      const img = it.img ? `<img src="${it.img}" alt="Olho com ${it.nome}" loading="lazy">` : `<div class="ph" aria-hidden="true">M</div>`;
+      card.innerHTML = `${img}<h3>${it.nome}</h3><p>${it.desc}</p><div class="tipos"></div>`;
+      [["Aplicação", it.aplic], ["Manutenção", it.manut]].forEach(([tipo, o]) => {
+        const s = { nome: `${it.nome} (${tipo.toLowerCase()})`, min: o.min, preco: o.preco, ex: "cilios" };
+        const b = document.createElement("button"); b.type = "button"; b.className = "tipo"; b.setAttribute("aria-pressed", "false");
+        b.innerHTML = `<small>${tipo} · ${dur(o.min)}</small><b>${brl(o.preco)}</b>`;
+        b.onclick = () => toggle(s); btns.set(s, b); card.querySelector(".tipos").appendChild(b);
+      });
+      box.appendChild(card);
+    } else {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "opt"; b.setAttribute("aria-pressed", "false");
+      b.innerHTML = `<span><b>${it.nome}</b><small>${it.desc} · ${dur(it.min)}</small></span><span class="price">${brl(it.preco)}</span>`;
+      b.onclick = () => toggle(it); btns.set(it, b); box.appendChild(b);
+    }
   });
 });
+
+$("end").textContent = CONFIG.endereco;
+$("pixkey").textContent = CONFIG.pix.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3");
+$("pixnome").textContent = CONFIG.pixNome;
+$("copypix").onclick = e => { navigator.clipboard.writeText(CONFIG.pix).then(() => e.target.textContent = "Copiado!").catch(() => e.target.textContent = CONFIG.pix); };
 
 /* dias */
 const days = $("days"), wk = ["dom","seg","ter","qua","qui","sex","sáb"];
@@ -260,6 +332,7 @@ function renderSummary() {
   set("s-date", state.date && state.date.toLocaleDateString("pt-BR",{weekday:"long",day:"numeric",month:"long"}), "Escolha um dia");
   set("s-time", state.time && (total ? `${state.time} às ${toStr(toMin(state.time)+total)}` : state.time), "Escolha um horário");
   $("s-price").textContent = brl(totalPreco());
+  $("s-sinal").textContent = brl(totalPreco() / 2);
   $("send").disabled = !(state.svcs.length && state.date && state.time);
 }
 
@@ -300,7 +373,7 @@ $("send").onclick = () => {
         const t0 = Date.parse(dados.inicio + ":00-03:00");
         busy.push({ s: t0, e: t0 + dados.min * 60000 });
         state.time = null; renderTimes(); renderSummary();
-        msg.textContent = "Pedido enviado! A Duda vai confirmar e avisar você pelo WhatsApp.";
+        msg.innerHTML = `Pedido enviado! Para garantir o horário, faça o Pix do sinal de ${brl(totalPreco() / 2)} e <a href="https://wa.me/${CONFIG.whatsapp}?text=${encodeURIComponent("Oi, Duda! Segue o comprovante do sinal do meu agendamento.")}" target="_blank" rel="noopener" style="color:#fff;font-weight:600">envie o comprovante pelo WhatsApp</a>.`;
       } else if (r.erro === "ocupado") {
         msg.textContent = "Esse horário acabou de ser reservado. Escolha outro.";
         state.time = null; busyOk = false; renderTimes(); loadBusy();
