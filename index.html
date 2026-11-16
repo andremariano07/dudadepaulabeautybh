@@ -14,7 +14,7 @@
 --serif:"Bodoni Moda",Georgia,serif;--sans:"Jost",system-ui,sans-serif}
 *{box-sizing:border-box;margin:0}
 html{scroll-behavior:smooth}
-body{font:400 1rem/1.6 var(--sans);color:var(--wine);background:var(--paper)}
+body{font:400 1rem/1.6 var(--sans);color:var(--wine);background:var(--paper);overflow-x:clip}
 a{color:inherit}
 :focus-visible{outline:3px solid var(--rose);outline-offset:3px}
 .wrap{max-width:1080px;margin:0 auto;padding:0 1.25rem}
@@ -30,8 +30,9 @@ header.hero{background:var(--wine);color:var(--blush);padding:clamp(3rem,9vw,6.5
 @keyframes draw{to{stroke-dashoffset:0}}
 @media (max-width:720px){.lash{opacity:.28;right:-18%}}
 main{padding:clamp(2.5rem,6vw,4.5rem) 0}
-.grid{display:grid;gap:2.5rem;grid-template-columns:1fr}
-@media (min-width:900px){.grid{grid-template-columns:1fr 340px;align-items:start}}
+.grid{display:grid;gap:2.5rem;grid-template-columns:minmax(0,1fr)}
+.grid>*{min-width:0}
+@media (min-width:900px){.grid{grid-template-columns:minmax(0,1fr) 340px;align-items:start}}
 h2{font:500 1.75rem/1.2 var(--serif);margin-bottom:.35rem}
 .step{margin-bottom:2.75rem}
 .step>p{color:var(--orchid);margin-bottom:1.1rem}
@@ -133,7 +134,7 @@ footer a{font-weight:600;color:var(--orchid)}
       <div class="total"><span>Valor a partir de</span><strong id="s-price">R$ 0</strong></div>
       <button class="send" id="send" type="button" disabled>Enviar pedido pelo WhatsApp</button>
       <div class="msg" id="msg" role="status"></div>
-      <p class="hint">O horário só fica reservado depois que a Duda confirmar pelo WhatsApp.</p>
+      <p class="hint">O horário só fica reservado após confirmação pelo WhatsApp.</p>
     </aside>
   </div>
 </main>
