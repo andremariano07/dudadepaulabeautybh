@@ -93,7 +93,7 @@ footer a{font-weight:600;color:var(--orchid)}
   <div class="wrap">
     <h1>Duda de Paula</h1>
     <div class="sub">BEAUTY BH</div>
-    <p>Maquiagem e cílios em Belo Horizonte. Escolha o serviço, o dia e o horário. Seu pedido chega pronto no WhatsApp para a confirmação.</p>
+    <p>Maquiagem e cílios em Belo Horizonte. Escolha os serviços, o dia e o horário. Seu pedido chega pronto no WhatsApp para a confirmação.</p>
     <a class="cta" href="#agendar">Agendar horário</a>
   </div>
 </header>
@@ -103,7 +103,7 @@ footer a{font-weight:600;color:var(--orchid)}
     <form id="form" novalidate>
       <section class="step">
         <h2><span>1</span>Escolha o serviço</h2>
-        <p>Os valores podem variar conforme o estilo escolhido. A Duda confirma tudo com você.</p>
+        <p>Você pode escolher mais de um serviço, por exemplo maquiagem e cílios no mesmo horário. Os valores podem variar conforme o estilo escolhido.</p>
         <div id="services"></div>
       </section>
 
@@ -127,14 +127,14 @@ footer a{font-weight:600;color:var(--orchid)}
     <aside aria-live="polite">
       <h2>Seu agendamento</h2>
       <dl>
-        <dt>Serviço</dt><dd id="s-svc" class="none">Escolha um serviço</dd>
+        <dt>Serviços</dt><dd id="s-svc" class="none">Escolha um serviço</dd>
         <dt>Data</dt><dd id="s-date" class="none">Escolha um dia</dd>
         <dt>Horário</dt><dd id="s-time" class="none">Escolha um horário</dd>
       </dl>
       <div class="total"><span>Valor a partir de</span><strong id="s-price">R$ 0</strong></div>
       <button class="send" id="send" type="button" disabled>Enviar pedido pelo WhatsApp</button>
       <div class="msg" id="msg" role="status"></div>
-      <p class="hint">O horário só fica reservado após confirmação pelo WhatsApp.</p>
+      <p class="hint">O horário só fica reservado depois que a Duda confirmar pelo WhatsApp.</p>
     </aside>
   </div>
 </main>
@@ -176,7 +176,9 @@ const CONFIG = {
 
 const $ = id => document.getElementById(id);
 const brl = n => "R$ " + n.toLocaleString("pt-BR");
-const state = { svc: null, date: null, time: null };
+const state = { svcs: [], date: null, time: null };
+const totalMin = () => state.svcs.reduce((a, x) => a + x.min, 0);
+const totalPreco = () => state.svcs.reduce((a, x) => a + x.preco, 0);
 const iso = d => d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
 const toMin = t => { const [h,m] = t.split(":").map(Number); return h*60+m; };
 const toStr = m => String(Math.floor(m/60)).padStart(2,"0") + ":" + String(m%60).padStart(2,"0");
@@ -193,7 +195,12 @@ CONFIG.servicos.forEach(g => {
     const b = document.createElement("button");
     b.type = "button"; b.className = "opt"; b.setAttribute("aria-pressed","false");
     b.innerHTML = `<span><b>${s.nome}</b><small>${s.desc} · ${dur(s.min)}</small></span><span class="price">${brl(s.preco)}</span>`;
-    b.onclick = () => { state.svc = s; state.time = null; sv.querySelectorAll(".opt").forEach(x => x.setAttribute("aria-pressed", x===b)); renderTimes(); renderSummary(); };
+    b.onclick = () => {
+      const i = state.svcs.indexOf(s);
+      if (i >= 0) state.svcs.splice(i, 1); else state.svcs.push(s);
+      b.setAttribute("aria-pressed", i < 0);
+      state.time = null; renderTimes(); renderSummary();
+    };
     box.appendChild(b);
   });
 });
@@ -215,15 +222,16 @@ for (let i = 0; i < CONFIG.diasNaAgenda; i++) {
 /* horários */
 function renderTimes() {
   const box = $("times"); box.innerHTML = "";
-  if (!state.svc || !state.date) { box.className = ""; box.innerHTML = `<div class="empty">Escolha o serviço e o dia para ver os horários livres.</div>`; return; }
+  if (!state.svcs.length || !state.date) { box.className = ""; box.innerHTML = `<div class="empty">Escolha os serviços e o dia para ver os horários livres.</div>`; return; }
+  const total = totalMin();
   box.className = "times";
   const key = iso(state.date), ocupados = CONFIG.bloqueados[key] || [];
   const agora = new Date(), ehHoje = key === iso(agora);
   const fim = toMin(CONFIG.fecha); let n = 0;
-  for (let m = toMin(CONFIG.abre); m + state.svc.min <= fim; m += CONFIG.intervalo) {
+  for (let m = toMin(CONFIG.abre); m + total <= fim; m += CONFIG.intervalo) {
     const h = toStr(m);
     const passou = ehHoje && m <= agora.getHours()*60 + agora.getMinutes() + 60;
-    const choque = ocupados.some(o => { const a = toMin(o); return a < m + state.svc.min && a + CONFIG.intervalo > m; });
+    const choque = ocupados.some(o => { const a = toMin(o); return a < m + total && a + CONFIG.intervalo > m; });
     const b = document.createElement("button");
     b.type = "button"; b.className = "time"; b.textContent = h;
     b.disabled = passou || choque; b.setAttribute("aria-pressed", state.time === h);
@@ -236,13 +244,13 @@ function renderTimes() {
 /* resumo */
 function setDD(id, text) { const e = $(id); e.textContent = text; e.classList.remove("none"); }
 function renderSummary() {
-  const s = state.svc;
+  const total = totalMin();
   const set = (id, val, ph) => { const e = $(id); if (val) { e.textContent = val; e.classList.remove("none"); } else { e.textContent = ph; e.classList.add("none"); } };
-  set("s-svc", s && `${s.nome} (${dur(s.min)})`, "Escolha um serviço");
+  set("s-svc", state.svcs.length && state.svcs.map(x => x.nome).join(" + ") + ` (${dur(total)})`, "Escolha um ou mais serviços");
   set("s-date", state.date && state.date.toLocaleDateString("pt-BR",{weekday:"long",day:"numeric",month:"long"}), "Escolha um dia");
-  set("s-time", state.time && (s ? `${state.time} às ${toStr(toMin(state.time)+s.min)}` : state.time), "Escolha um horário");
-  $("s-price").textContent = brl(s ? s.preco : 0);
-  $("send").disabled = !(s && state.date && state.time);
+  set("s-time", state.time && (total ? `${state.time} às ${toStr(toMin(state.time)+total)}` : state.time), "Escolha um horário");
+  $("s-price").textContent = brl(totalPreco());
+  $("send").disabled = !(state.svcs.length && state.date && state.time);
 }
 
 /* envio */
@@ -255,14 +263,14 @@ $("send").onclick = () => {
   if (nome.length < 3) { msg.textContent = "Digite seu nome completo."; $("name").focus(); return; }
   if (tel.length < 10) { msg.textContent = "Digite seu WhatsApp com DDD."; $("phone").focus(); return; }
   msg.textContent = "";
-  const s = state.svc, obs = $("notes").value.trim();
+  const obs = $("notes").value.trim();
   const texto = [
     "Olá, Duda! Quero agendar um horário:",
     "",
-    "Serviço: " + s.nome,
+    (state.svcs.length > 1 ? "Serviços: " : "Serviço: ") + state.svcs.map(x => x.nome).join(" + "),
     "Data: " + state.date.toLocaleDateString("pt-BR",{weekday:"long",day:"numeric",month:"long",year:"numeric"}),
     "Horário: " + state.time,
-    "Valor a partir de: " + brl(s.preco),
+    "Valor a partir de: " + brl(totalPreco()),
     "",
     "Nome: " + nome,
     "WhatsApp: " + $("phone").value,
